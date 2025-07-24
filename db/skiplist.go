@@ -9,7 +9,8 @@ package db
 
 import (
 	"sync"
-	"bytes"
+
+	"github.com/Xudong0722/Leveldb-go/utils"
 )
 
 const (
@@ -21,7 +22,7 @@ const (
 
 type Node struct {
 	// Key-value data
-	key []byte
+	key interface{}
 
 	// Pointers to next nodes at each level
 	next []*Node
@@ -30,9 +31,9 @@ type Node struct {
 	level int     
 }
 
-func NewNode(kvData []byte, level int) *Node {
+func NewNode(key interface{}, level int) *Node {
 	return &Node {
-		key: kvData,
+		key: key,
 		next: make([]*Node, level + 1),
 		level: level,
 	}
@@ -62,13 +63,17 @@ type SkipList struct {
 
 	// Current maximum level of the skip list
 	maxLevel int
+
+	// Comprator
+	cmp utils.Comprator
 }
 
-func NewSkipList() *SkipList {
+func NewSkipList(cp utils.Comprator) *SkipList {
 	return &SkipList {
 		head: NewNode(nil, MaxLevel),
 		mutex: new(sync.RWMutex),
 		maxLevel: MaxLevel,
+		cmp: cp,
 	}
 }
 
@@ -78,11 +83,11 @@ func (sl *SkipList) GetCurrentHeight() int {
 
 // KeyIsAfterNode returns the given key is greater than 
 // Node's key, return true means we need to keep searching in this list
-func KeyIsAfterNode(key []byte, nd *Node) bool {
+func (sl *SkipList)KeyIsAfterNode(key interface{}, nd *Node) bool {
 	if nd == nil {
 		return false  //search in lower level
 	}
-	if bytes.Compare(key, nd.key) > 0{
+	if sl.cmp(key, nd.key) > 0{
 		return true
 	}
 	return false
@@ -91,12 +96,12 @@ func KeyIsAfterNode(key []byte, nd *Node) bool {
 // GetGreaterOrEqual returns the first node whose key is >= given key
 // if prevs is not nil,  it also sets the first m.height elements of prev to the
 // preceding node at each height.
-func (sl *SkipList) GetGreaterOrEqual(key []byte, prevs *[]*Node) *Node {
+func (sl *SkipList) GetGreaterOrEqual(key interface{}, prevs *[]*Node) *Node {
 	cur := sl.head
 	level := sl.GetCurrentHeight() - 1
 	for  {
 		next := cur.Next(level)
-		if KeyIsAfterNode(key, next) {
+		if sl.KeyIsAfterNode(key, next) {
 			//keep searching in this list
 			cur = next
 		}else {
@@ -109,7 +114,7 @@ func (sl *SkipList) GetGreaterOrEqual(key []byte, prevs *[]*Node) *Node {
 			}
 			if level == 0{
 				//if we already at the level0
-				if bytes.Equal(key, next.key) {
+				if sl.cmp(key, cur.key) == 0 {
 					return next
 				}else {
 					return nil
@@ -123,11 +128,11 @@ func (sl *SkipList) GetGreaterOrEqual(key []byte, prevs *[]*Node) *Node {
 	}
 }
 
-func (sl *SkipList) Insert(kvData []byte) {
+func (sl *SkipList) Insert(key interface{}) {
 	return 
 }
 
-func (sl *SkipList) Contains(kvData []byte) bool {
+func (sl *SkipList) Contains(key interface{}) bool {
 	return false
 }
 
