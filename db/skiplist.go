@@ -9,15 +9,16 @@ package db
 
 import (
 	"sync"
+	"math/rand"
 
 	"github.com/Xudong0722/Leveldb-go/utils"
 )
 
 const (
-	// MaxLevel is the maximum level of the skip list
-	MaxLevel = 12
-	// P is the probability of promoting a node to the next level
-	P = 0.25
+	// MaxHeight is the maximum level of the skip list
+	MaxHeight = 12
+
+	Branching = 4
 )
 
 type Node struct {
@@ -39,19 +40,19 @@ func NewNode(key interface{}, level int) *Node {
 	}
 }
 
-func (nd *Node) Next(n int) *Node {
-	if n >= nd.level {
-		return nil
-	}
-	return nd.next[n]
-}
-
 func (nd *Node) SetNext(n int, x *Node) bool {
 	if n >= nd.level {
 		return false
 	}
 	nd.next[n] = x
 	return true
+}
+
+func (nd *Node) GetNext(n int) *Node {
+	if n >= nd.level {
+		return nil
+	}
+	return nd.next[n]
 }
 
 type SkipList struct {
@@ -62,7 +63,7 @@ type SkipList struct {
 	mutex *sync.RWMutex 
 
 	// Current maximum level of the skip list
-	maxLevel int
+	maxHeight int
 
 	// Comprator
 	cmp utils.Comprator
@@ -70,15 +71,15 @@ type SkipList struct {
 
 func NewSkipList(cp utils.Comprator) *SkipList {
 	return &SkipList {
-		head: NewNode(nil, MaxLevel),
+		head: NewNode(nil, MaxHeight),
 		mutex: new(sync.RWMutex),
-		maxLevel: MaxLevel,
+		maxHeight: MaxHeight,
 		cmp: cp,
 	}
 }
 
 func (sl *SkipList) GetCurrentHeight() int {
-	return sl.maxLevel
+	return sl.maxHeight
 }
 
 // KeyIsAfterNode returns the given key is greater than 
@@ -87,7 +88,8 @@ func (sl *SkipList)KeyIsAfterNode(key interface{}, nd *Node) bool {
 	if nd == nil {
 		return false  //search in lower level
 	}
-	if sl.cmp(key, nd.key) > 0{
+	res, _ := sl.cmp(key, nd.key)
+	if res > 0{
 		return true
 	}
 	return false
@@ -96,11 +98,12 @@ func (sl *SkipList)KeyIsAfterNode(key interface{}, nd *Node) bool {
 // GetGreaterOrEqual returns the first node whose key is >= given key
 // if prevs is not nil,  it also sets the first m.height elements of prev to the
 // preceding node at each height.
-func (sl *SkipList) GetGreaterOrEqual(key interface{}, prevs *[]*Node) *Node {
+func (sl *SkipList) GetGreaterOrEqual(key interface{}) (*Node, [MaxHeight]*Node) {
 	cur := sl.head
 	level := sl.GetCurrentHeight() - 1
+	var prevs [MaxHeight]*Node
 	for  {
-		next := cur.Next(level)
+		next := cur.GetNext(level)
 		if sl.KeyIsAfterNode(key, next) {
 			//keep searching in this list
 			cur = next
@@ -108,16 +111,17 @@ func (sl *SkipList) GetGreaterOrEqual(key interface{}, prevs *[]*Node) *Node {
 			// The key greater than cur but less than or equal to next
 			// cur ------key ------next
 			// maybe key equal to next or less than next
-			if nil != prevs {
-				//Before jump to low level, we need to store current level value
-				(*prevs)[level] = cur
-			}
+
+			//Before jump to low level, we need to store current level value
+			prevs[level] = cur
+			
 			if level == 0{
 				//if we already at the level0
-				if sl.cmp(key, cur.key) == 0 {
-					return next
+				res, err := sl.cmp(key, cur.key)
+				if err == nil && res == 0 {
+					return next, prevs
 				}else {
-					return nil
+					return nil, prevs
 				}
 			}else {
 				// Switch to next list
@@ -126,13 +130,43 @@ func (sl *SkipList) GetGreaterOrEqual(key interface{}, prevs *[]*Node) *Node {
 			
 		}
 	}
+	return nil, prevs
 }
 
 func (sl *SkipList) Insert(key interface{}) {
-	return 
+	_, prevs := sl.GetGreaterOrEqual(key)
+	new_height := sl.randomHeight()
+
+	if sl.GetCurrentHeight() < new_height {
+		for i := sl.GetCurrentHeight(); i < new_height; i++ {
+			prevs[i] = sl.head   //这个高度之前没有人达到，先初始化
+		}
+	}
+
+	new_node := NewNode(key, new_height)
+	for i := 0; i < new_height; i++ {
+		//  prevs[i]  -> new_node -> prevs[i].next[i]
+		new_node.SetNext(i, prevs[i].GetNext(i))  
+		prevs[i].SetNext(i, new_node)
+	}
 }
 
 func (sl *SkipList) Contains(key interface{}) bool {
+	if key == nil {
+		return false
+	}
+	tar, _ := sl.GetGreaterOrEqual(key)
+	res, err := sl.cmp(key, tar.key)
+	if nil != tar && err != nil && res == 0 {
+		return true
+	}
 	return false
 }
 
+func (sl *SkipList) randomHeight() int {
+	height := 1
+	for height < MaxHeight && (rand.Intn(Branching) == 0) {  // 1/4 enter higher level.
+		height ++
+	}
+	return height
+}
