@@ -73,7 +73,7 @@ func NewSkipList(cp utils.Comprator) *SkipList {
 	return &SkipList{
 		head:      NewNode(nil, MaxHeight),
 		mutex:     new(sync.RWMutex),
-		maxHeight: MaxHeight,
+		maxHeight: 1, //初始高度为1， 但是head的next数组是有MaxHeight层
 		cmp:       cp,
 	}
 }
@@ -132,8 +132,9 @@ func (sl *SkipList) Insert(key interface{}) {
 
 	if sl.GetCurrentHeight() < new_height {
 		for i := sl.GetCurrentHeight(); i < new_height; i++ {
-			prevs[i] = sl.head //这个高度之前没有人达到，先初始化
+			prevs[i] = sl.head //这个高度之前没有人达到，用head进行补充，因为head的next数组是最高的
 		}
+		sl.maxHeight = new_height
 	}
 
 	new_node := NewNode(key, new_height)
@@ -142,6 +143,7 @@ func (sl *SkipList) Insert(key interface{}) {
 		new_node.SetNext(i, prevs[i].GetNext(i))
 		prevs[i].SetNext(i, new_node)
 	}
+
 }
 
 func (sl *SkipList) Contains(key interface{}) bool {
@@ -157,6 +159,29 @@ func (sl *SkipList) Contains(key interface{}) bool {
 		return true
 	}
 	return false
+}
+
+func (sl *SkipList) Delete(key interface{}) bool {
+	if !sl.Contains(key) {
+		return false
+	}
+
+	target, prevs := sl.GetGreaterOrEqual(key)
+	if nil == target {
+		return false
+	}
+	res, err := sl.cmp(key, target.key)
+	if err != nil || res != 0 {
+		return false
+	}
+
+	//这个地方应该使用target的高度去遍历，target level小于跳表当前高度情况下，高于target level的perv的next并不指向target，不能修改
+	//wrong: for i := 0; i < sl.GetCurrentHeight(); i++
+	for i := 0; i < target.level; i++ {
+		prevs[i].SetNext(i, target.GetNext(i))
+	}
+	target = nil
+	return true
 }
 
 func (sl *SkipList) randomHeight() int {
