@@ -8,10 +8,9 @@
 package db
 
 import (
+	"fmt"
 	"math/rand"
 	"sync"
-
-	"github.com/Xudong0722/Leveldb-go/utils"
 )
 
 const (
@@ -66,10 +65,10 @@ type SkipList struct {
 	maxHeight int
 
 	// Comprator
-	cmp utils.Comprator
+	cmp Comprator
 }
 
-func NewSkipList(cp utils.Comprator) *SkipList {
+func NewSkipList(cp Comprator) *SkipList {
 	return &SkipList{
 		head:      NewNode(nil, MaxHeight),
 		mutex:     new(sync.RWMutex),
@@ -127,7 +126,8 @@ func (sl *SkipList) GetGreaterOrEqual(key interface{}) (*Node, [MaxHeight]*Node)
 }
 
 func (sl *SkipList) Insert(key interface{}) {
-	_, prevs := sl.GetGreaterOrEqual(key)
+	node, prevs := sl.GetGreaterOrEqual(key)
+	fmt.Println(node)
 	new_height := sl.randomHeight()
 
 	if sl.GetCurrentHeight() < new_height {

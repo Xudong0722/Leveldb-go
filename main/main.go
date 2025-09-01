@@ -4,14 +4,21 @@ import (
 	"fmt"
 
 	"github.com/Xudong0722/Leveldb-go/db"
-	"github.com/Xudong0722/Leveldb-go/utils"
 )
 
 // This file is for Debug.
 
 func main() {
-	sl := db.NewSkipList(utils.StringComprator)
-	sl.Insert(string("test"))
-	res1 := sl.Contains(string("test"))
-	fmt.Println(res1)
+	tb := db.NewMemTable()
+	tb.Put([]byte("test-2"), []byte("value-2"))
+	// tb.Put([]byte("test-5"), []byte("value-5"))
+	// tb.Put([]byte("test-8"), []byte("value-8"))
+	// tb.Put([]byte("test-7"), []byte("value-7"))
+	// tb.Put([]byte("test-6"), []byte("value-6"))
+	// tb.Put([]byte("test-3"), []byte("value-3"))
+	// tb.Put([]byte("test-4"), []byte("value-4"))
+	tb.Put([]byte("test-0"), []byte("value-0"))
+
+	val, _ := tb.Get([]byte("test-0"))
+	fmt.Println(string(val))
 }

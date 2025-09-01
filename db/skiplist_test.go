@@ -3,12 +3,11 @@ package db
 import (
 	"testing"
 
-	"github.com/Xudong0722/Leveldb-go/utils"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestInsert(t *testing.T) {
-	sl := NewSkipList(utils.StringComprator)
+	sl := NewSkipList(ByteArrayComprator)
 	sl.Insert(string("test"))
 	res1 := sl.Contains(string("test"))
 	assert.Equal(t, res1, true)
@@ -29,7 +28,7 @@ func TestInsert(t *testing.T) {
 }
 
 func Test_Leetcode_S1(t *testing.T) {
-	sl := NewSkipList(utils.IntComprator)
+	sl := NewSkipList(IntComprator)
 	sl.Insert(1)
 	sl.Insert(2)
 	sl.Insert(3)
