@@ -2,7 +2,6 @@ package db
 
 import (
 	"bytes"
-	"fmt"
 
 	"github.com/Xudong0722/Leveldb-go/utils"
 )
@@ -17,7 +16,7 @@ const (
 
 type MemTable struct {
 	//当前内存表使用的数据结构
-	mem_model SkipList
+	mem *SkipList
 
 	//当前内存表的序列号
 	id uint32
@@ -26,17 +25,28 @@ type MemTable struct {
 	approximate_size uint32
 }
 
+type MemTableIterator struct {
+	//迭代器所对应的内存表
+	table *SkipList
+}
+
 func NewMemTable() *MemTable {
 	return &MemTable{
-		mem_model:        *NewSkipList(ByteArrayComprator),
+		mem:              NewSkipList(MemTableKeyComprator),
 		id:               0,
 		approximate_size: 0,
 	}
 }
 
+func (mt *MemTable) NewMemTableIterator() *MemTableIterator {
+	return &MemTableIterator{
+		table: mt.mem,
+	}
+}
+
 func (mt *MemTable) Get(key []byte) ([]byte, error) {
 	lookup_key := NewLookupKeyWithK(key, GetTempSeqNum())
-	node, _ := mt.mem_model.GetGreaterOrEqual(lookup_key.ToMemKey())
+	node, _ := mt.mem.GetGreaterOrEqual(lookup_key.ToMemKey())
 	if node == nil {
 		return nil, nil
 	}
@@ -57,8 +67,8 @@ func (mt *MemTable) Get(key []byte) ([]byte, error) {
 func (mt *MemTable) Put(key []byte, value []byte) {
 	lookup_key := NewLookupKeyWithKV(key, value)
 	lookup_key.tag = encodeTag(GetAndIncreaseSeqNum(), kValue)
-	fmt.Println(lookup_key)
-	mt.mem_model.Insert(lookup_key.ToMemKey())
+	//fmt.Println(lookup_key)
+	mt.mem.Insert(lookup_key.ToMemKey())
 }
 
 var initial_num uint64 = 0

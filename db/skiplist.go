@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"math/rand"
 	"sync"
+
+	"github.com/Xudong0722/Leveldb-go/utils"
 )
 
 const (
@@ -190,4 +192,52 @@ func (sl *SkipList) randomHeight() int {
 		height++
 	}
 	return height
+}
+
+type SkipListIterator struct {
+	//当前所在的节点
+	cur *Node
+
+	//对应的跳表
+	sl *SkipList
+}
+
+func NewSkipListIterator(sl_ *SkipList) *SkipListIterator {
+	return &SkipListIterator{
+		cur: nil,
+		sl:  sl_,
+	}
+}
+
+func (sl_iter *SkipListIterator) Valid() bool {
+	return sl_iter.cur != nil
+}
+
+func (sl_iter *SkipListIterator) Key() interface{} {
+	utils.Assert(sl_iter.Valid(), "Current node is nil.")
+	return sl_iter.cur.key
+}
+
+func (sl_iter *SkipListIterator) Next() {
+	utils.Assert(sl_iter.Valid(), "Current node is nil.")
+	sl_iter.cur = sl_iter.cur.next[0]
+}
+
+func (sl_iter *SkipListIterator) Prev() {
+	utils.Assert(sl_iter.Valid(), "Current node is nil.")
+	//TODO
+}
+
+func (sl_iter *SkipListIterator) Seek(target []byte) { //TODO, param->interface{}
+	utils.Assert(sl_iter.Valid(), "Current node is nil.")
+	sl_iter.cur, _ = sl_iter.sl.GetGreaterOrEqual(target)
+}
+
+func (sl_iter *SkipListIterator) SeekToFirst() {
+	sl_iter.cur = sl_iter.sl.head.next[0]
+}
+
+func (sl_iter *SkipListIterator) SeekToLast() {
+	utils.Assert(sl_iter.Valid(), "Current node is nil.")
+	//TODO
 }

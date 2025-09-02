@@ -3,13 +3,14 @@ package db
 import (
 	"bytes"
 	"encoding/binary"
+	"strings"
 
 	"github.com/Xudong0722/Leveldb-go/utils"
 )
 
 type Comprator func(a, b interface{}) (int, error)
 
-func ByteArrayComprator(a, b interface{}) (int, error) {
+func MemTableKeyComprator(a, b interface{}) (int, error) {
 	sa, ok := a.([]byte)
 	if !ok {
 		return 0, utils.ErrTypeMismatch
@@ -33,6 +34,32 @@ func ByteArrayComprator(a, b interface{}) (int, error) {
 		}
 	}
 	return res, nil
+}
+
+func ByteArrayKeyComprator(a, b interface{}) (int, error) {
+	sa, ok := a.([]byte)
+	if !ok {
+		return 0, utils.ErrTypeMismatch
+	}
+	sb, ok := b.([]byte)
+	if !ok {
+		return 0, utils.ErrTypeMismatch
+	}
+
+	return bytes.Compare(sa, sb), nil
+}
+
+func StringKeyComprator(a, b interface{}) (int, error) {
+	sa, ok := a.(string)
+	if !ok {
+		return 0, utils.ErrTypeMismatch
+	}
+	sb, ok := b.(string)
+	if !ok {
+		return 0, utils.ErrTypeMismatch
+	}
+
+	return strings.Compare(sa, sb), nil
 }
 
 // return [user key, user key length, tag]
