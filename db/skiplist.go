@@ -274,6 +274,10 @@ func (sl_iter *SkipListIterator) Next() {
 func (sl_iter *SkipListIterator) Prev() {
 	utils.Assert(sl_iter.Valid(), "Current node is nil.")
 	sl_iter.cur = sl_iter.sl.GetLessThan(sl_iter.cur.key)
+	// 如果返回的是 head 节点，说明已经到达了跳表的开始，将迭代器设置为无效
+	if sl_iter.cur == sl_iter.sl.head {
+		sl_iter.cur = nil
+	}
 }
 
 func (sl_iter *SkipListIterator) Seek(target interface{}) { //TODO, param->interface{}
