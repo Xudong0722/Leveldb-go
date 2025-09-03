@@ -87,4 +87,10 @@ func TestIterator(t *testing.T) {
 		t.Log(iter.Key())
 	}
 
+
+	iter.SeekToLast()
+
+	for ; iter.Valid(); iter.Prev() {
+		t.Log(iter.Key())
+	}
 }

@@ -127,6 +127,51 @@ func (sl *SkipList) GetGreaterOrEqual(key interface{}) (*Node, [MaxHeight]*Node)
 	}
 }
 
+// Return the latest node with a key < key.
+// Return head if there is no such node.
+func (sl *SkipList) GetLessThan(key interface{}) (*Node) {
+	cur := sl.head
+	level := sl.GetCurrentHeight() - 1
+	var prevs [MaxHeight]*Node
+	for {
+		next := cur.GetNext(level)
+		// If next is nil, or next.key is greater than key, we stop at previous node.
+		// 8 ----> 13
+		// 8 ->9-> 13
+		//key = 10, cur = head
+		//round1: next = 8, level = 1; 8 > 10? false, cur = 8
+		//round2: next = 13, level = 1; 13 > 10? true, level = 0, cur = 8
+		//round3: next = 9, level = 0; 9 > 10? false, cur = 9
+		//round4: next = 13, level = 0; 13 > 10? true, because level = 0, return cur = 9
+		if next == nil || (res, _ := sl.cmp(next.key, key); res >=0)  {
+			if level == 0{
+				return cur
+			}else{
+				level = level - 1
+			}
+		} else {
+			cur = next
+		}
+	}
+}
+
+func (sl *SkipList) GetLast() *Node {
+	cur := sl.head
+	level := sl.GetCurrentHeight() - 1
+	for {
+		next := cur.GetNext(level)
+		if next == nil {
+			if level == 0 {
+				return cur
+			} else {
+				level = level - 1
+			}
+		}else{
+			cur = next
+		}
+	}
+}
+
 func (sl *SkipList) Insert(key interface{}) {
 	node, prevs := sl.GetGreaterOrEqual(key)
 	fmt.Println(node)
@@ -225,10 +270,10 @@ func (sl_iter *SkipListIterator) Next() {
 
 func (sl_iter *SkipListIterator) Prev() {
 	utils.Assert(sl_iter.Valid(), "Current node is nil.")
-	//TODO
+	sl_iter.cur = sl_iter.sl.GetLessThan(sl_iter.cur.key)
 }
 
-func (sl_iter *SkipListIterator) Seek(target []byte) { //TODO, param->interface{}
+func (sl_iter *SkipListIterator) Seek(target interface{}) { //TODO, param->interface{}
 	utils.Assert(sl_iter.Valid(), "Current node is nil.")
 	sl_iter.cur, _ = sl_iter.sl.GetGreaterOrEqual(target)
 }
@@ -239,5 +284,5 @@ func (sl_iter *SkipListIterator) SeekToFirst() {
 
 func (sl_iter *SkipListIterator) SeekToLast() {
 	utils.Assert(sl_iter.Valid(), "Current node is nil.")
-	//TODO
+	sl_iter.cur = sl_iter.sl.GetLast()
 }
