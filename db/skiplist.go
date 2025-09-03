@@ -132,7 +132,6 @@ func (sl *SkipList) GetGreaterOrEqual(key interface{}) (*Node, [MaxHeight]*Node)
 func (sl *SkipList) GetLessThan(key interface{}) (*Node) {
 	cur := sl.head
 	level := sl.GetCurrentHeight() - 1
-	var prevs [MaxHeight]*Node
 	for {
 		next := cur.GetNext(level)
 		// If next is nil, or next.key is greater than key, we stop at previous node.
