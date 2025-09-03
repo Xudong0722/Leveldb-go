@@ -143,7 +143,8 @@ func (sl *SkipList) GetLessThan(key interface{}) (*Node) {
 		//round2: next = 13, level = 1; 13 > 10? true, level = 0, cur = 8
 		//round3: next = 9, level = 0; 9 > 10? false, cur = 9
 		//round4: next = 13, level = 0; 13 > 10? true, because level = 0, return cur = 9
-		if next == nil || (res, _ := sl.cmp(next.key, key); res >=0)  {
+		res, _ := sl.cmp(next.key, key)
+		if next == nil ||  res >= 0  {
 			if level == 0{
 				return cur
 			}else{
