@@ -283,6 +283,5 @@ func (sl_iter *SkipListIterator) SeekToFirst() {
 }
 
 func (sl_iter *SkipListIterator) SeekToLast() {
-	utils.Assert(sl_iter.Valid(), "Current node is nil.")
 	sl_iter.cur = sl_iter.sl.GetLast()
 }
