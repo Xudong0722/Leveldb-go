@@ -13,5 +13,11 @@ const (
 )
 
 type Writer struct {
-	offset uint32
+	offset   uint32
+	dst      WritableFile
+	type_crc []uint32
+}
+
+func (w *Writer) AddRecord(data []byte) error {
+
 }
